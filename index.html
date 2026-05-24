@@ -122,41 +122,27 @@
         /* --- MEDIA QUERIES UNTUK MOBILE (RESPONSIVE) --- */
         /* ========================================= */
         @media (max-width: 768px) {
-            /* Navbar jadi horizontal scroll agar muat di HP */
             .nav-container { flex-direction: column; align-items: flex-start; padding: 10px 20px; gap: 15px; }
             .nav-links { width: 100%; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
-            .nav-links::-webkit-scrollbar { display: none; } /* Sembunyikan scrollbar bawaan */
+            .nav-links::-webkit-scrollbar { display: none; }
             .nav-links a { margin-left: 0; margin-right: 20px; font-size: 13px; }
             .nav-btn { padding: 8px 15px; font-size: 12px !important; }
-
-            /* Jarak layar (agar tidak tertutup navbar yang membengkak) */
             .page-view { padding-top: 120px; padding-bottom: 80px; }
-
-            /* Ukuran font Hero lebih kecil */
             .hero h1 { font-size: 2.8rem; }
             .hero p { font-size: 1.1rem; }
             .section-header h2 { font-size: 2rem; }
-
-            /* Ruang Form lebih rapat */
             .form-container { padding: 25px 20px; }
             .row { flex-direction: column; gap: 15px; margin-bottom: 15px; }
-            
-            /* Tutorial steps disesuaikan ke tengah atau lebih ringkas */
             .step-item { padding: 20px; gap: 15px; flex-direction: column; text-align: center; align-items: center; border-left: none; border-top: 5px solid var(--primary); }
-            
-            /* Box PC builder & hasil pencarian */
             .pc-builder-card { padding: 20px; }
-            .komponen-list { grid-template-columns: 1fr 1fr; } /* 2 kolom di HP */
+            .komponen-list { grid-template-columns: 1fr 1fr; }
             .komponen-harga { font-size: 16px; }
-
-            /* Footer font diperkecil sedikit */
             footer { padding: 12px 15px; font-size: 11px; }
         }
 
-        /* Khusus HP sangat kecil (misal iPhone SE / Layar sempit) */
         @media (max-width: 480px) {
             .hero h1 { font-size: 2.3rem; }
-            .komponen-list { grid-template-columns: 1fr; } /* 1 kolom penuh di HP mungil */
+            .komponen-list { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -175,7 +161,6 @@
     </nav>
 
     <main>
-
         <div id="view-home" class="page-view active">
             <div class="section-inner hero">
                 <div class="hero-badge">✨ Diperbarui dengan Kalkulator PC Rakitan AI</div>
@@ -309,7 +294,6 @@
                 <div class="results-wrapper" id="hasil-container"></div>
             </div>
         </div>
-
     </main>
 
     <footer>
@@ -339,7 +323,6 @@
         });
 
         // --- 2. LOGIKA APLIKASI TECHMATCH ---
-        const API_KEY = "5c11060583b9fb607c5237abc8b8bad7271db7ef0acdad01dd433afdfef332c9"; 
         const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 
         const kategoriSelect = document.getElementById('kategori');
@@ -429,14 +412,14 @@
             const keywordPencarian = buatKeywordPintar(inputKategori, inputFokus, inputBudget, inputTipePc);
 
             try {
-                const targetUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(keywordPencarian)}&gl=id&hl=id&api_key=${API_KEY}`;
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-                const response = await fetch(proxyUrl);
+                // MENGGUNAKAN API LOKAL VERCEL (TIDAK LAGI MEMAKAI CORSPROXY)
+                const targetUrl = `/api/search?q=${encodeURIComponent(keywordPencarian)}`;
+                const response = await fetch(targetUrl);
                 const data = await response.json();
                 divLoading.style.display = "none";
 
                 if (data.error || !data.shopping_results || data.shopping_results.length === 0) {
-                    divHasil.innerHTML = htmlSimulasiPC + `<div style="text-align:center; color:#ff6b6b;"><h3>Produk tidak ditemukan di pasar.</h3></div>`; return;
+                    divHasil.innerHTML = htmlSimulasiPC + `<div style="text-align:center; color:#ff6b6b;"><h3>Produk tidak ditemukan di pasar atau terjadi error dari server.</h3></div>`; return;
                 }
 
                 let hasilValid = [];
