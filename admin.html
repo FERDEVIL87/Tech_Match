@@ -3,82 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechMatch - Admin Dashboard</title>
+    <title>TechMatch - Content Manager</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; margin: 0; }
-        .container { max-width: 800px; margin: 40px auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
-        h2 { margin-top: 0; color: #818cf8; border-bottom: 1px solid #334155; padding-bottom: 15px; }
-        p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
-        textarea { width: 100%; height: 450px; background: #0f172a; color: #10b981; font-family: monospace; font-size: 14px; padding: 15px; border: 1px solid #334155; border-radius: 8px; margin-top: 15px; box-sizing: border-box; resize: vertical; }
-        textarea:focus { outline: none; border-color: #6366f1; }
-        button { background: #6366f1; color: white; border: none; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 16px; margin-top: 20px; transition: 0.2s; }
-        button:hover { background: #4f46e5; }
-        .status { margin-top: 15px; font-weight: bold; font-size: 14px; }
-        .warning { background: #7f1d1d; color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 13px; margin-top: 10px; border: 1px solid #991b1b; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; padding-bottom: 80px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 15px;}
+        .header h2 { color: #818cf8; margin: 0; }
+        .section-card { background: #1e293b; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); border: 1px solid #334155;}
+        .section-title { color: #c084fc; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 20px; font-size: 18px;}
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 600; font-size: 14px; text-transform: capitalize; }
+        input[type="text"], textarea { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #475569; color: #10b981; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 15px;}
+        textarea { resize: vertical; min-height: 80px; }
+        input:focus, textarea:focus { outline: none; border-color: #6366f1; background: #1e293b; }
+        .array-item { background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #475569;}
+        
+        button.save-btn { 
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); 
+            color: white; border: none; padding: 15px 24px; cursor: pointer; 
+            border-radius: 8px; font-weight: bold; font-size: 16px; transition: 0.2s; 
+            width: calc(100% - 40px); max-width: 900px;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); z-index: 100;
+        }
+        button.save-btn:hover { box-shadow: 0 10px 25px rgba(99, 102, 241, 0.6); }
+        .status { margin-top: 10px; font-weight: bold; text-align: right; font-size: 14px; }
+        #loading { text-align: center; color: #94a3b8; padding: 50px; font-size: 18px;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>⚙️ TechMatch Admin Panel</h2>
-        <p>Ubah teks Landing Page di dalam kotak di bawah ini. Pastikan kamu <strong>tidak menghapus tanda kutip ganda (") atau kurung kurawal ({})</strong> agar format data tidak rusak.</p>
-        
-        <div class="warning">
-            ⚠️ <strong>Perhatian:</strong> Halaman ini bersifat rahasia. Jangan berikan link ini kepada orang lain.
+        <div class="header">
+            <h2>⚙️ TechMatch CMS</h2>
+            <div id="statusMessage" class="status"></div>
         </div>
+        <p style="color: #94a3b8;">Ubah teks website dengan mudah di bawah ini. Cukup isi kolomnya dan klik tombol simpan di bagian bawah layar. Tanda kutip dan kurung kurawal sudah diurus oleh sistem!</p>
 
-        <textarea id="jsonEditor">Mengambil data dari database...</textarea>
-        <br>
-        <button onclick="saveData()">💾 Simpan ke Database</button>
-        <div id="statusMessage" class="status"></div>
+        <div id="loading">⏳ Mengambil data langsung dari database...</div>
+        
+        <form id="cmsForm" style="display: none;"></form>
     </div>
 
+    <button class="save-btn" id="saveBtn" style="display: none;" onclick="saveData()">💾 Simpan Semua Perubahan</button>
+
     <script>
-        // 1. Ambil data dari MySQL saat halaman admin dibuka
+        let currentData = {}; // Menyimpan struktur asli JSON
+
+        // 1. Ambil data saat web dibuka
         fetch('/api/landing')
             .then(res => res.json())
             .then(data => {
-                // Tampilkan data ke dalam textarea agar bisa diedit Admin
-                document.getElementById('jsonEditor').value = JSON.stringify(data, null, 4);
+                currentData = data;
+                document.getElementById('loading').style.display = 'none';
+                const form = document.getElementById('cmsForm');
+                form.style.display = 'block';
+                document.getElementById('saveBtn').style.display = 'block';
+                
+                // Panggil fungsi untuk menyulap JSON menjadi form input
+                buildFormUI(data, form);
             })
             .catch(err => {
-                document.getElementById('jsonEditor').value = "Gagal memuat data. Pastikan database terhubung.";
+                document.getElementById('loading').innerText = "❌ Gagal memuat data. Pastikan database terhubung.";
             });
 
-        // 2. Fungsi untuk menyimpan data kembali ke MySQL
-        async function saveData() {
-            const btn = document.querySelector('button');
-            const status = document.getElementById('statusMessage');
-            const rawData = document.getElementById('jsonEditor').value;
+        // 2. Fungsi menyulap JSON ke Input Form
+        function buildFormUI(data, container) {
+            for (const section in data) {
+                if (typeof data[section] === 'object' && !Array.isArray(data[section])) {
+                    
+                    const card = document.createElement('div');
+                    card.className = 'section-card';
+                    card.innerHTML = `<h3 class="section-title">Bagian: ${section}</h3>`;
 
+                    for (const key in data[section]) {
+                        const val = data[section][key];
+
+                        if (typeof val === 'string') {
+                            // Jika teks biasa
+                            card.appendChild(createInputGroup(section, key, val));
+                        } else if (Array.isArray(val)) {
+                            // Jika berbentuk daftar (seperti list keunggulan/tutorial)
+                            const arrayContainer = document.createElement('div');
+                            arrayContainer.innerHTML = `<label style="color: #818cf8; font-size:16px; margin-top:20px; border-bottom:1px solid #334155; padding-bottom:5px;">Daftar Item (${key}):</label>`;
+                            
+                            val.forEach((item, index) => {
+                                const itemBox = document.createElement('div');
+                                itemBox.className = 'array-item';
+                                for (const itemKey in item) {
+                                    itemBox.appendChild(createInputGroup(`${section}.${key}.${index}`, itemKey, item[itemKey]));
+                                }
+                                arrayContainer.appendChild(itemBox);
+                            });
+                            card.appendChild(arrayContainer);
+                        }
+                    }
+                    container.appendChild(card);
+                }
+            }
+        }
+
+        // 3. Template HTML untuk setiap baris Input
+        function createInputGroup(path, key, value) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            
+            const label = document.createElement('label');
+            label.innerText = key.replace(/([A-Z])/g, ' $1').trim(); // Mempercantik nama label
+            
+            let input;
+            // Gunakan textarea jika teksnya panjang
+            if (value.length > 50 || key.includes('description') || key.includes('desc')) {
+                input = document.createElement('textarea');
+                input.value = value;
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+            }
+            
+            // Simpan jejak lokasi data ini di JSON
+            input.dataset.path = `${path}.${key}`;
+            input.className = 'cms-input';
+
+            group.appendChild(label);
+            group.appendChild(input);
+            return group;
+        }
+
+        // 4. Proses simpan kembali ke JSON dan kirim ke Database
+        async function saveData() {
+            const btn = document.getElementById('saveBtn');
+            const status = document.getElementById('statusMessage');
+            
+            btn.innerText = "⏳ Menyimpan ke Database...";
+            
+            // Menyusun ulang data dari input form ke format JSON
+            const inputs = document.querySelectorAll('.cms-input');
+            let newData = JSON.parse(JSON.stringify(currentData)); // Copy data lama
+
+            inputs.forEach(input => {
+                const keys = input.dataset.path.split('.');
+                let current = newData;
+                // Masuk ke dalam struktur bersarang
+                for (let i = 0; i < keys.length - 1; i++) {
+                    current = current[keys[i]];
+                }
+                // Update nilainya
+                current[keys[keys.length - 1]] = input.value;
+            });
+
+            // Kirim ke backend Vercel
             try {
-                // Pastikan admin tidak tidak sengaja merusak format (misal kurang tanda kutip)
-                const parsedData = JSON.parse(rawData);
-                
-                btn.innerText = "⏳ Menyimpan...";
-                status.innerText = "";
-                
                 const response = await fetch('/api/landing', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(parsedData)
+                    body: JSON.stringify(newData)
                 });
 
                 const result = await response.json();
                 
                 if(response.ok) {
-                    status.style.color = "#10b981"; // Hijau
-                    status.innerText = "✅ " + result.message;
+                    status.style.color = "#10b981";
+                    status.innerText = "✅ Perubahan Tersimpan!";
                 } else {
-                    status.style.color = "#ef4444"; // Merah
+                    status.style.color = "#ef4444";
                     status.innerText = "❌ Gagal: " + result.error;
                 }
             } catch (e) {
                 status.style.color = "#ef4444";
-                status.innerText = "❌ Error: Format penulisan salah. Cek kembali tanda kutip atau koma yang mungkin terhapus.";
+                status.innerText = "❌ Error koneksi jaringan.";
             }
             
-            btn.innerText = "💾 Simpan ke Database";
-            // Hilangkan pesan sukses setelah 4 detik
+            btn.innerText = "💾 Simpan Semua Perubahan";
+            // Hilangkan status setelah 4 detik
             setTimeout(() => { status.innerText = ""; }, 4000);
         }
     </script>
