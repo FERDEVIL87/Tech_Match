@@ -348,7 +348,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Konten Deskripsi (Mendukung tag HTML seperti &lt;p&gt;, &lt;strong&gt;)</label>
+                            <label>Konten Deskripsi (Tulis teks biasa. Gunakan **teks** untuk cetak tebal & Tekan Enter untuk paragraf baru)</label>
                             <textarea id="inp-about-content" rows="6" required></textarea>
                         </div>
 
@@ -428,6 +428,23 @@
         // Catat kunjungan pertama kali saat halaman dimuat
         catatAnalitik('analytics_views');
 
+        // Fungsi mengubah teks biasa & enter menjadi format HTML otomatis
+        function formatTeksKeHtml(teks) {
+            if (!teks) return '';
+            
+            // 1. Ubah **teks** menjadi <strong>teks</strong> (Cetak Tebal)
+            let formatted = teks.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // 2. Ubah *teks* menjadi <em>teks</em> (Cetak Miring)
+            formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // 3. Ubah setiap Enter/Baris Baru menjadi paragraf <p>
+            return formatted
+                .split(/\n\s*\n/)
+                .map(paragraf => `<p style="margin-bottom: 12px;">${paragraf.trim().replace(/\n/g, '<br>')}</p>`)
+                .join('');
+        }
+
         async function muatKontenDariBackend() {
             try {
                 const respon = await fetch('/api/landing');
@@ -439,7 +456,8 @@
 
                 document.getElementById('about-title').innerText = dataUiGlobal.about.title;
                 document.getElementById('about-subtitle').innerText = dataUiGlobal.about.subtitle;
-                document.getElementById('about-content').innerHTML = dataUiGlobal.about.content;
+                // Menggunakan fungsi auto-format
+                document.getElementById('about-content').innerHTML = formatTeksKeHtml(dataUiGlobal.about.content);
 
                 document.getElementById('features-title').innerText = dataUiGlobal.features.title;
                 document.getElementById('features-subtitle').innerText = dataUiGlobal.features.subtitle;
